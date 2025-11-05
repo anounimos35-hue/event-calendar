@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Whiteout Survival Event Tracker</title>
+
+  <!-- FullCalendar CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- Tailwind CSS for quick styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- FullCalendar JS -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.js"></script>
+
+  <!-- PapaParse for CSV parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <style>
+    body {
+      background: linear-gradient(to bottom, #0f172a, #1e3a8a);
+      color: white;
+      font-family: "Poppins", sans-serif;
+    }
+    .fc {
+      background: white;
+      color: black;
+      border-radius: 16px;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body class="p-4">
+  <h1 class="text-3xl font-bold text-center mb-4">
+    ⚔️ Whiteout Survival Event Tracker
+  </h1>
+  <p class="text-center text-gray-300 mb-6">
+    Data loaded live from Google Sheets
+  </p>
+
+  <div id="calendar" class="max-w-6xl mx-auto"></div>
+
+  <p class="text-center text-gray-400 mt-6">
+    UTC Time: <span id="utcTime"></span>
+  </p>
+
+  <script>
+    const sheetURL =
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQqEGv2IBoFaSZXEN8eal2B5yApG7CQMLQ6x39ealDV3r5Pk3H5IogqgBO3DGfreRYiTT_fHK_5Glvw/pub?output=csv";
+
+    function updateTime() {
+      document.getElementById("utcTime").textContent = new Date().toUTCString();
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+
+    // Fetch Google Sheet CSV
+    fetch(sheetURL)
+      .then((res) => res.text())
+      .then((csv) => {
+        Papa.parse(csv, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function (result) {
+            const events = result.data.map((row) => ({
+              title: row.Event || "Unnamed Event",
+              start: row.StartDate || row.Date,
+              end: row.EndDate || row.StartDate,
+              color:
+                row.Type === "Alliance"
+                  ? "#4ade80" // green
+                  : row.Type === "Solo"
+                  ? "#60a5fa" // blue
+                  : row.Type === "Fortress"
+                  ? "#facc15" // yellow
+                  : "#9ca3af",
+            }));
+
+            // Initialize Calendar
+            const calendarEl = document.getElementById("calendar");
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+              initialView: "timeGridWeek",
+              headerToolbar: {
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,listWeek",
+              },
+              events: events,
+              eventTimeFormat: {
+                hour: "2-digit",
+                minute: "2-digit",
+                meridiem: false,
+              },
+              height: "80vh",
+            });
+
+            calendar.render();
+          },
+        });
+      });
+  </script>
+</body>
+</html>
